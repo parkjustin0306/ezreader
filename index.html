@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EZ Reader - Making Web Reading Accessible</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'OpenDyslexic';
+            src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/otf/OpenDyslexic-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'OpenDyslexic';
+            src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/otf/OpenDyslexic-Italic.otf') format('opentype');
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: 'OpenDyslexic';
+            src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/otf/OpenDyslexic-Bold.otf') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'OpenDyslexic';
+            src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/otf/OpenDyslexic-BoldItalic.otf') format('opentype');
+            font-weight: bold;
+            font-style: italic;
+        }
+    </style>
+    <link rel="icon" type="image/png" href="ezr_logo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'OpenDyslexic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #231f27;
+            /* Dark mode background */
+            color: #ffedd5;
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 20px 0;
+            background: rgba(35, 31, 39, 0.95);
+            /* Dark mode nav bar background */
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 237, 213, 0.1);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body.white-mode {
+            background-color: #dce0d8;
+            /* Light mode background */
+            color: #1a1200;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+
+        body.white-mode nav {
+            background: rgba(220, 224, 216, 0.95);
+            /* Light mode background for nav bar */
+            border-bottom: 1px solid rgba(26, 18, 0, 0.1);
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 500;
+            color: #ffedd5;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: color 0.3s ease;
+            z-index: 1001;
+        }
+
+        body.white-mode .logo {
+            color: #1a1200;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            display: block;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* Logo stays consistent in both themes */
+            filter: invert(0);
+            transition: filter 0.3s ease;
+        }
+
+        body.white-mode .logo-icon img {
+            filter: invert(1);
+        }
+
+        /* Desktop Navigation */
+        .nav-desktop {
+            display: flex;
+            list-style: none;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .nav-desktop a {
+            text-decoration: none;
+            color: #ffedd5;
+            font-size: 14px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease, color 0.3s ease;
+            position: relative;
+            font-weight: 400;
+        }
+
+        body.white-mode .nav-desktop a {
+            color: #1a1200;
+        }
+
+        .nav-desktop a:hover,
+        .nav-desktop a.active {
+            opacity: 1;
+        }
+
+        .nav-desktop a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: #ffedd5;
+            transition: background-color 0.3s ease;
+        }
+
+        body.white-mode .nav-desktop a.active::after {
+            background: #1a1200;
+        }
+
+        /* Mobile Navigation */
+        .nav-mobile {
+            display: none;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 24px;
+            height: 18px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            z-index: 1001;
+        }
+
+        .hamburger span {
+            display: block;
+            height: 2px;
+            width: 100%;
+            background-color: #ffedd5;
+            transition: all 0.3s ease;
+        }
+
+        body.white-mode .hamburger span {
+            background-color: #1a1200;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #231f27;
+            /* Dark mode background color */
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transform: translateY(-100%);
+            transition: transform 0.4s ease;
+            z-index: 999;
+        }
+
+        body.white-mode .mobile-menu {
+            background: #dce0d8;
+            /* Light mode background color */
+        }
+
+        .mobile-menu.active {
+            transform: translateY(0);
+        }
+
+        .mobile-menu ul {
+            list-style: none;
+            text-align: center;
+        }
+
+        .mobile-menu li {
+            margin: 25px 0;
+        }
+
+        .mobile-menu a {
+            color: #ffedd5;
+            text-decoration: none;
+            font-size: 24px;
+            font-weight: 300;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        body.white-mode .mobile-menu a {
+            color: #1a1200;
+        }
+
+        .mobile-menu a:hover,
+        .mobile-menu a.active {
+            opacity: 1;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            padding: 8px;
+            border-radius: 8px;
+            color: #ffedd5;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(255, 237, 213, 0.1);
+        }
+
+        body.white-mode .theme-toggle {
+            color: #1a1200;
+        }
+
+        body.white-mode .theme-toggle:hover {
+            background-color: rgba(26, 18, 0, 0.05);
+        }
+
+        .theme-toggle svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .theme-toggle .moon-icon {
+            display: none;
+        }
+
+        body.white-mode .theme-toggle .sun-icon {
+            display: none;
+        }
+
+        body.white-mode .theme-toggle .moon-icon {
+            display: block;
+        }
+
+        /* Page Sections */
+        .page {
+            min-height: 100vh;
+            padding: 120px 0 60px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .page.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .page:not(.active) {
+            display: none;
+        }
+
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 13px;
+            opacity: 0.7;
+            transition: color 0.3s ease;
+            z-index: 998;
+        }
+
+        body.white-mode footer {
+            color: #1a1200;
+        }
+
+        /* About Page */
+        .about-content {
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .intro {
+            text-align: left;
+        }
+
+        .intro h1 {
+            font-size: 48px;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #ffedd5;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .intro h1 {
+            color: #1a1200;
+        }
+
+        .intro .logo-large {
+            width: 96px;
+            height: 96px;
+            flex-shrink: 0;
+        }
+
+        .intro .logo-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: invert(0);
+            transition: filter 0.3s ease;
+        }
+
+        body.white-mode .intro .logo-large img {
+            filter: invert(1);
+        }
+
+        .intro .subtitle {
+            font-size: 18px;
+            opacity: 0.7;
+            margin-bottom: 40px;
+            font-weight: 300;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .intro .subtitle {
+            color: #1a1200;
+        }
+
+        .intro p {
+            font-size: 16px;
+            opacity: 0.8;
+            max-width: 600px;
+            margin-bottom: 20px;
+            font-weight: 300;
+            line-height: 1.8;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .intro p {
+            color: #1a1200;
+        }
+
+        .contact-info {
+            margin-top: 40px;
+        }
+
+        .contact-info h3 {
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 15px;
+            opacity: 0.9;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .contact-info h3 {
+            color: #1a1200;
+        }
+
+        .contact-list {
+            list-style: none;
+        }
+
+        .contact-list li {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            font-weight: 300;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .contact-list li {
+            color: #1a1200;
+        }
+
+        .contact-list a {
+            color: #ffedd5;
+            text-decoration: none;
+            transition: opacity 0.3s ease, color 0.3s ease;
+        }
+
+        body.white-mode .contact-list a {
+            color: #1a1200;
+        }
+
+        .contact-list a:hover {
+            opacity: 1;
+        }
+
+        /* Features Page */
+        .features-content {
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+        }
+
+        .feature-item {
+            border-left: 1px solid rgba(255, 237, 213, 0.2);
+            padding-left: 30px;
+            position: relative;
+            transition: border-color 0.3s ease;
+        }
+
+        body.white-mode .feature-item {
+            border-left: 1px solid rgba(26, 18, 0, 0.2);
+        }
+
+        .feature-item::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: 0;
+            width: 7px;
+            height: 7px;
+            background: #ffedd5;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        body.white-mode .feature-item::before {
+            background: #1a1200;
+        }
+
+        .feature-header {
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 400;
+            color: #ffedd5;
+            margin-bottom: 5px;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .feature-title {
+            color: #1a1200;
+        }
+
+        .feature-category {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+            font-weight: 300;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .feature-category {
+            color: #1a1200;
+        }
+
+        .feature-status {
+            font-size: 12px;
+            opacity: 0.5;
+            font-weight: 300;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .feature-status {
+            color: #1a1200;
+        }
+
+        .feature-description {
+            font-size: 14px;
+            opacity: 0.8;
+            line-height: 1.7;
+            font-weight: 300;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .feature-description {
+            color: #1a1200;
+        }
+
+        .feature-description ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+
+        .feature-description li {
+            margin-bottom: 8px;
+            opacity: 0.7;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .feature-description li {
+            color: #1a1200;
+        }
+
+        /* Benefits Section */
+        .benefits {
+            margin-top: 60px;
+        }
+
+        .benefits h3 {
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 20px;
+            opacity: 0.9;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .benefits h3 {
+            color: #1a1200;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+        }
+
+        .benefit-category {
+            opacity: 0.8;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .benefit-category {
+            color: #1a1200;
+        }
+
+        .benefit-category h4 {
+            font-size: 14px;
+            font-weight: 400;
+            margin-bottom: 10px;
+            opacity: 0.9;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .benefit-category h4 {
+            color: #1a1200;
+        }
+
+        .benefit-list {
+            font-size: 12px;
+            opacity: 0.6;
+            line-height: 1.8;
+            font-weight: 300;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .benefit-list {
+            color: #1a1200;
+        }
+
+        /* Founders Page */
+        .founders-content {
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .founders-intro {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 10px;
+        }
+
+        .founders-intro h2 {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .founders-intro h2 {
+            color: #1a1200;
+        }
+
+        .founders-intro p {
+            font-size: 16px;
+            opacity: 0.7;
+            line-height: 1.8;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .founders-intro p {
+            color: #1a1200;
+        }
+
+        .founders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 50px;
+            margin-top: 40px;
+        }
+
+        .founder-card {
+            text-align: left;
+        }
+
+        .founder-name {
+            font-size: 24px;
+            font-weight: 400;
+            margin-bottom: 10px;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .founder-name {
+            color: #1a1200;
+        }
+
+        .founder-role {
+            font-size: 14px;
+            opacity: 0.6;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .founder-role {
+            color: #1a1200;
+        }
+
+        .founder-bio {
+            font-size: 14px;
+            line-height: 1.8;
+            opacity: 0.8;
+            margin-bottom: 15px;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .founder-bio {
+            color: #1a1200;
+        }
+
+        .founder-interests {
+            font-size: 13px;
+            opacity: 0.6;
+            font-style: italic;
+            transition: color 0.3s ease;
+        }
+
+        body.white-mode .founder-interests {
+            color: #1a1200;
+        }
+
+        /* Download Page */
+        .download-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .download-button {
+            display: inline-block;
+            padding: 16px 32px;
+            margin-top: 20px;
+            background-color: #ffedd5;
+            color: #231f27;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 2px solid #ffedd5;
+            letter-spacing: 0.5px;
+        }
+
+        body.white-mode .download-button {
+            background-color: #1a1200;
+            color: #dce0d8;
+            border-color: #1a1200;
+        }
+
+        .download-button:hover {
+            background-color: transparent;
+            color: #ffedd5;
+            border-color: #ffedd5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 237, 213, 0.2);
+        }
+
+        body.white-mode .download-button:hover {
+            background-color: transparent;
+            color: #1a1200;
+            border-color: #1a1200;
+            box-shadow: 0 4px 12px rgba(26, 18, 0, 0.2);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            /* Mobile Navigation */
+            .nav-desktop {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-mobile {
+                display: block;
+            }
+
+            /* Typography Adjustments */
+            .intro h1 {
+                font-size: 36px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .intro .subtitle {
+                font-size: 16px;
+            }
+
+            .page {
+                padding: 100px 0 40px;
+            }
+
+            .feature-item {
+                padding-left: 20px;
+            }
+
+            .benefits-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .founders-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .founder-name {
+                font-size: 22px;
+            }
+
+            .founder-bio {
+                font-size: 14px;
+            }
+
+            /* Footer */
+            footer {
+                font-size: 12px;
+                bottom: 15px;
+                right: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .intro h1 {
+                font-size: 32px;
+            }
+
+            .founders-intro h2 {
+                font-size: 28px;
+            }
+
+            .feature-title {
+                font-size: 16px;
+            }
+
+            .feature-description {
+                font-size: 13px;
+            }
+
+            .benefit-category h4 {
+                font-size: 13px;
+            }
+
+            .benefit-list {
+                font-size: 11px;
+            }
+        }
+
+        /* Mobile Theme Toggle Centering */
+        .mobile-theme-toggle {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .mobile-menu li:last-child {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Navigation Link Hover Animation */
+        .nav-desktop a {
+            position: relative;
+            text-decoration: none;
+        }
+
+        .nav-desktop a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: #ffedd5;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        body.white-mode .nav-desktop a::after {
+            background: #1a1200;
+        }
+
+        .nav-desktop a:hover::after {
+            animation: sweep 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sweep {
+            0% {
+                transform: scaleX(0);
+                transform-origin: left;
+            }
+
+            50% {
+                transform: scaleX(1);
+                transform-origin: left;
+            }
+
+            51% {
+                transform: scaleX(1);
+                transform-origin: right;
+            }
+
+            100% {
+                transform: scaleX(0);
+                transform-origin: right;
+            }
+        }
+
+        /* Mobile navigation hover effects */
+        .mobile-menu a {
+            position: relative;
+        }
+
+        .mobile-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: #ffedd5;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        body.white-mode .mobile-menu a::after {
+            background: #1a1200;
+        }
+
+        .mobile-menu a:hover::after {
+            animation: sweep 1.5s ease-in-out infinite;
+        }
+
+        /* Fix for the "about" link specifically */
+        .nav-desktop a.active::after {
+            display: none;
+        }
+
+        /* Smooth transitions */
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Video Styles */
+        .video-container {
+            margin: 40px 0;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 16 / 9;
+            position: relative;
+        }
+
+        .responsive-video {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        body.white-mode .responsive-video {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .video-container {
+                margin: 30px 0;
+                max-width: 100%;
+            }
+
+            .responsive-video {
+                height: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">
+                    <img src="ezr_logo.png" alt="EZ Reader Logo">
+                </span>
+                ez reader
+            </div>
+
+            <!-- Desktop Navigation -->
+            <ul class="nav-desktop">
+                <li><a href="#about" class="nav-link active">about</a></li>
+                <li><a href="#features" class="nav-link">features</a></li>
+                <li><a href="#founders" class="nav-link">founders</a></li>
+                <li><a href="#privacy" class="nav-link">privacy</a></li>
+                <li><a href="#download" class="nav-link">download</a></li>
+                <li>
+                    <button class="theme-toggle" aria-label="Toggle theme">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="sun-icon">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <path d="M12 2v2"></path>
+                            <path d="M12 20v2"></path>
+                            <path d="m4.93 4.93 1.41 1.41"></path>
+                            <path d="m17.66 17.66 1.41 1.41"></path>
+                            <path d="M2 12h2"></path>
+                            <path d="M20 12h2"></path>
+                            <path d="m6.34 17.66-1.41 1.41"></path>
+                            <path d="m19.07 4.93-1.41 1.41"></path>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="moon-icon">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                        </svg>
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Mobile Navigation -->
+            <div class="nav-mobile">
+                <button class="hamburger" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="mobile-menu">
+                    <ul>
+                        <li><a href="#about" class="nav-link active">about</a></li>
+                        <li><a href="#features" class="nav-link">features</a></li>
+                        <li><a href="#founders" class="nav-link">founders</a></li>
+                        <li><a href="#privacy" class="nav-link">privacy</a></li>
+                        <li><a href="#download" class="nav-link">download</a></li>
+                        <li>
+                            <button class="theme-toggle mobile-theme-toggle" aria-label="Toggle theme">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="sun-icon">
+                                    <circle cx="12" cy="12" r="4"></circle>
+                                    <path d="M12 2v2"></path>
+                                    <path d="M12 20v2"></path>
+                                    <path d="m4.93 4.93 1.41 1.41"></path>
+                                    <path d="m17.66 17.66 1.41 1.41"></path>
+                                    <path d="M2 12h2"></path>
+                                    <path d="M20 12h2"></path>
+                                    <path d="m6.34 17.66-1.41 1.41"></path>
+                                    <path d="m19.07 4.93-1.41 1.41"></path>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="moon-icon">
+                                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                                </svg>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- About Page -->
+    <section id="about" class="page active">
+        <div class="container">
+            <div class="about-content">
+                <div class="intro">
+                    <h1>
+                        <span class="logo-large">
+                            <img src="ezr_logo.png" alt="EZ Reader Logo">
+                        </span>
+                        ez reader
+                    </h1>
+                    <p class="subtitle">a browser extension for better reading accessibility</p>
+
+                    <!-- Video added here -->
+                    <div class="video-container">
+                        <video class="responsive-video" controls poster="ezr_video_poster.jpg">
+                            <source src="ezr_video.mp4" type="video/mp4">
+                            <source src="ezr_video.webm" type="video/webm">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+
+                    <p>
+                        ez reader is a simple yet powerful browser extension designed to make any webpage
+                        more comfortable to read. we believe that everyone should have control over how
+                        they experience written content on the web.
+                    </p>
+                    <p>
+                        with just a click, users can instantly adjust text size and switch between different
+                        fonts to find what works best for their eyes. whether you have dyslexia, visual
+                        challenges, or simply prefer a specific reading style, ez reader puts you in control
+                        of your web reading experience.
+                    </p>
+                    <p>
+                        no complex settings, no overwhelming options - just simple, effective tools that
+                        make reading easier. we're focused on the essentials: font selection and text sizing
+                        that work seamlessly across any website you visit.
+                    </p>
+                </div>
+
+                <div class="contact-info">
+                    <h3>contact us at:</h3>
+                    <ul class="contact-list">
+                        <li><a href="mailto:ezreaderext@gmail.com">ezreaderext@gmail.com</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Page -->
+    <section id="features" class="page">
+        <div class="container">
+            <div class="features-content">
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">font selection</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>choose from a dropdown list of carefully selected fonts for better readability.</p>
+                        <ul>
+                            <li>dyslexia-friendly font options</li>
+                            <li>classic readable fonts for general use</li>
+                            <li>instant preview of font changes</li>
+                            <li>consistent application across all page elements</li>
+                            <li>one-click font switching</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">adjustable text color</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>instantly change the color of the text on any webpage to your preferred color.</p>
+                        <ul>
+                            <li>multiple options between text colors</li>
+                            <li>instant preview of color changes</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">adjustable page background color</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>instantly change the color of the background on any webpage to your preferred shade.</p>
+                        <ul>
+                            <li>multiple options between background colors</li>
+                            <li>instant preview of color changes</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">text bolding</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>instantly change the bolding of the text on any webpage to enable easier reading.</p>
+                        <ul>
+                            <li>bolds text instantly</li>
+                            <li>instant preview of bolding changes</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">adjustable text size</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>instantly resize text on any webpage to your preferred reading size.</p>
+                        <ul>
+                            <li>simple slider control for quick adjustments</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">letter spacing</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>controls the horizontal space between lines of text, improving readability, and visual
+                            appeal.</p>
+                        <ul>
+                            <li>simple slider control for quick adjustments</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">line height</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>controls the vertical space between lines of text, improving readability, and visual appeal.
+                        </p>
+                        <ul>
+                            <li>simple slider control for quick adjustments</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">magnifier glass & zoom in</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>a magnifying glass designed to help users zoom into their content, with a slider to control
+                            the strength.</p>
+                        <ul>
+                            <li>simple hover control function</li>
+                            <li>easy slider control for quick adjustments</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">reading ruler & ruler colors</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>a tool designed to help users stay focused while reading by underlining a single line of text
+                            at a time.</p>
+                        <ul>
+                            <li>simple hover control function</li>
+                            <li>instant preview of color changes</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">text to speech</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>has a voice enabler that converts written text into spoken audio.</p>
+                        <ul>
+                            <li>the system takes in written text and turns it into an audio.</li>
+                            <li>helps people who prefer listening than reading</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">reading progression bar</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>a bar that increases and indicates to the user how far they are viewing down the website.</p>
+                        <ul>
+                            <li>instant feedback to user</li>
+                            <li>indicates how far user is down the website</li>
+                            <li>all you do is scroll, and it will keep track</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">pointer finger cursor</div>
+                        <div class="feature-category">core feature</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>enable a pointer finger to help keep track of the text you are reading.</p>
+                        <ul>
+                            <li>instant preview of enabled changes</li>
+                            <li>simple hover function</li>
+                            <li>works on any website you visit</li>
+                            <li>no page refresh required</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">browser extension</div>
+                        <div class="feature-category">platform</div>
+                        <div class="feature-status">available now</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>lightweight extension for all major browsers.</p>
+                        <ul>
+                            <li>chrome and chromium-based browsers</li>
+                            <li>firefox support</li>
+                            <li>safari compatibility</li>
+                            <li>minimal memory footprint</li>
+                            <li>no data collection or tracking</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-title">future enhancements</div>
+                        <div class="feature-category">roadmap</div>
+                        <div class="feature-status">in development</div>
+                    </div>
+                    <div class="feature-description">
+                        <p>planned features based on user feedback.</p>
+                        <ul>
+                            <li>updated user interface</li>
+                            <li>enhance error handling and user feedback messages</li>
+                            <li>add localization support for multiple languages</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="benefits">
+                    <h3>why choose ez reader</h3>
+                    <div class="benefits-grid">
+                        <div class="benefit-category">
+                            <h4>for individuals</h4>
+                            <div class="benefit-list">
+                                improved reading speed<br>
+                                reduced eye strain<br>
+                                better comprehension<br>
+                                increased confidence<br>
+                                personalized experience
+                            </div>
+                        </div>
+                        <div class="benefit-category">
+                            <h4>for educators</h4>
+                            <div class="benefit-list">
+                                inclusive classrooms<br>
+                                student engagement<br>
+                                assessment tools<br>
+                                progress tracking<br>
+                                resource accessibility
+                            </div>
+                        </div>
+                        <div class="benefit-category">
+                            <h4>for organizations</h4>
+                            <div class="benefit-list">
+                                ada compliance<br>
+                                inclusive workplace<br>
+                                employee productivity<br>
+                                accessibility standards<br>
+                                corporate responsibility
+                            </div>
+                        </div>
+                        <div class="benefit-category">
+                            <h4>technology</h4>
+                            <div class="benefit-list">
+                                machine learning<br>
+                                real-time processing<br>
+                                cross-platform<br>
+                                privacy-focused<br>
+                                regular updates
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Founders Page -->
+    <section id="founders" class="page">
+        <div class="container">
+            <div class="founders-content">
+                <div class="founders-intro">
+                    <h2>meet the founders</h2>
+                    <p>two friends united by a vision to make the web more accessible</p>
+                </div>
+
+                <div class="founders-grid">
+                    <div class="founder-card">
+                        <div class="founder-name">justin park</div>
+                        <div class="founder-role">co-founder</div>
+                        <div class="founder-bio">
+                            a human-centered computing major at rochester institute of technology. justin brings
+                            together his expertise in user experience with his creative eye for design. his
+                            approach to user centered development always starts with understanding real human needs
+                            and crafting elegant solutions.
+                        </div>
+                        <div class="founder-interests">
+                            interests: snowboarding, fashion, graphic design, web development & user centered designing
+                        </div>
+                    </div>
+
+                    <div class="founder-card">
+                        <div class="founder-name">mateen rashid</div>
+                        <div class="founder-role">co-founder</div>
+                        <div class="founder-bio">
+                            a finance student with a deep passion for technology. mateen combines his analytical
+                            mindset with a genuine desire to help people, believing that technology should remove
+                            barriers, not create them. his vision for ez reader stems from seeing friends and
+                            family struggle with web readability.
+                        </div>
+                        <div class="founder-interests">
+                            interests: web development, snowboarding, & fintech innovation
+                        </div>
+                    </div>
+                </div>
+
+                <div class="founders-intro" style="margin-top: 60px;">
+                    <p style="opacity: 0.6; font-size: 14px;">
+                        what started as a conversation on the slopes turned into a mission to make
+                        reading easier for everyone. we believe in simple tools that make a real difference.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Policy Page -->
+    <section id="privacy" class="page">
+        <div class="container">
+            <div class="about-content">
+                <div class="intro">
+                    <h1>privacy policy</h1>
+                    <p class="subtitle">clear, honest, and actually readable</p>
+
+                    <div style="margin: 40px 0;">
+                        <h3 style="font-size: 18px; margin-bottom: 20px; font-weight: 400;">Key Points</h3>
+                        <ul style="opacity: 0.8; line-height: 1.8; margin-left: 20px;">
+                            <li>We process your reading preferences locally in your browser - no data is sent to
+                                external servers</li>
+                            <li>Your reading settings are never stored on our servers</li>
+                            <li>We prioritize your privacy and never sell, rent, or store your data beyond what is
+                                necessary</li>
+                            <li>All font and text adjustments happen directly in your browser</li>
+                            <li>We don't collect any personal information or browsing history</li>
+                        </ul>
+                    </div>
+
+                    <h3 style="font-size: 18px; margin: 40px 0 20px 0; font-weight: 400;">Introduction</h3>
+                    <p>
+                        Welcome to EZ Reader ("we," "our," or "us"). We value your privacy and are committed to
+                        protecting your personal information. This Privacy Policy explains how we handle information
+                        when you use our browser extension.
+                    </p>
+
+                    <h3 style="font-size: 18px; margin: 40px 0 20px 0; font-weight: 400;">Information We Collect</h3>
+                    <p>
+                        When you use EZ Reader to customize your reading experience, we process:
+                    </p>
+                    <ul style="opacity: 0.8; line-height: 1.8; margin: 15px 0 15px 20px;">
+                        <li><strong>Reading Preferences:</strong> Your chosen font, text size, color settings, and other
+                            accessibility adjustments</li>
+                        <li><strong>Extension Settings:</strong> Your personal configuration for the extension's
+                            behavior</li>
+                    </ul>
+                    <p>
+                        We do not collect or store any personal information, browsing history, or website content unless
+                        explicitly provided by you for purposes such as contacting support.
+                    </p>
+
+                    <h3 style="font-size: 18px; margin: 40px 0 20px 0; font-weight: 400;">How We Use Your Information
+                    </h3>
+                    <p>
+                        The primary use of your reading preferences is to help you read web content more comfortably.
+                        Specifically:
+                    </p>
+                    <ul style="opacity: 0.8; line-height: 1.8; margin: 15px 0 15px 20px;">
+                        <li>Your reading settings are processed locally in your browser</li>
+                        <li>Font changes and text adjustments happen directly on your device</li>
+                        <li>No reading data or website content is transmitted to external servers</li>
+                        <li>Your preferences are stored locally in your browser for future sessions</li>
+                    </ul>
+
+                    <h3 style="font-size: 18px; margin: 40px 0 20px 0; font-weight: 400;">Data Retention and Security
+                    </h3>
+                    <p>
+                        Since all processing happens locally in your browser:
+                    </p>
+                    <ul style="opacity: 0.8; line-height: 1.8; margin: 15px 0 15px 20px;">
+                        <li>Your reading preferences remain on your device</li>
+                        <li>No personal information or browsing data is stored on our servers</li>
+                        <li>Your settings persist in your browser's local storage for convenience</li>
+                        <li>You can clear this data at any time through your browser settings</li>
+                    </ul>
+                    <p>
+                        We implement industry-standard security practices to ensure your data remains private and secure
+                        during your browsing sessions.
+                    </p>
+
+                    <h3 style="font-size: 18px; margin: 40px 0 20px 0; font-weight: 400;">Permissions</h3>
+                    <p>
+                        EZ Reader requires access to web pages solely to apply readability enhancements and text
+                        customization features. We do not use this access to collect, monitor, or transmit your browsing
+                        data.
+                    </p>
+
+                    <h3 style="font-size: 18px; margin: 40px 0 20px 0; font-weight: 400;">Contact Us</h3>
+                    <p>
+                        If you have any questions about this Privacy Policy or our practices, please contact us at:
+                    </p>
+                    <div class="contact-info" style="margin-top: 20px;">
+                        <ul class="contact-list">
+                            <li><a href="mailto:ezreaderext@gmail.com">ezreaderext@gmail.com</a></li>
+                        </ul>
+                    </div>
+
+                    <p style="margin-top: 40px; opacity: 0.6; font-size: 14px;">
+                        last updated: November 2025
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="download" class="page">
+        <div class="container">
+            <div class="download-content">
+                <div class="founders-intro">
+                    <h2>download ez reader</h2>
+                    <p>available now for chrome</p>
+                </div>
+                <div style="text-align: center; margin-top: 0px;">
+                    <a href="https://chromewebstore.google.com/detail/andfappmfejelcpnaocbdenoekppfjjj?utm_source=item-share-cb" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="download-button">
+                        download for chrome
+                    </a>
+                    <p style="opacity: 0.7; font-size: 16px; margin-top: 30px;">contact us for questions & feedback. stay tuned for updates!</p>
+                    <p style="margin-top: 40px; opacity: 0.6; font-size: 14px; text-align: center;">last updated: November 2025</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div>2025 &copy; Justin Park | Mateen Rashid</div>
+    </footer>
+
+    <script>
+        // Simple page navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pages = document.querySelectorAll('.page');
+    
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+    
+                const targetId = link.getAttribute('href').substring(1);
+    
+                // Update URL hash
+                window.location.hash = targetId;
+    
+                // Update active nav link
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+    
+                // Show target page
+                pages.forEach(page => {
+                    page.classList.remove('active');
+                    if (page.id === targetId) {
+                        page.classList.add('active');
+                    }
+                });
+    
+                // Scroll to top of the page
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+    
+                // Close mobile menu if open
+                if (window.innerWidth <= 768) {
+                    const hamburger = document.querySelector('.hamburger');
+                    const mobileMenu = document.querySelector('.mobile-menu');
+                    hamburger.classList.remove('active');
+                    mobileMenu.classList.remove('active');
+                }
+            });
+        });
+    
+        // Handle direct hash navigation (NEW)
+        function handleHashNavigation() {
+            const hash = window.location.hash.substring(1); // Remove the #
+            
+            if (hash) {
+                // Find the corresponding nav link and click it
+                const targetLink = document.querySelector(`.nav-link[href="#${hash}"]`);
+                if (targetLink) {
+                    // Remove active class from all pages and links
+                    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+                    
+                    // Add active class to target page and link
+                    const targetPage = document.getElementById(hash);
+                    if (targetPage) {
+                        targetPage.classList.add('active');
+                        targetLink.classList.add('active');
+                    }
+                    
+                    // Scroll to top
+                    window.scrollTo(0, 0);
+                }
+            }
+        }
+    
+        // Call this when page loads and when hash changes
+        document.addEventListener('DOMContentLoaded', handleHashNavigation);
+        window.addEventListener('hashchange', handleHashNavigation);
+    
+        // Add fade-in animation to sections when they become active
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in');
+                }
+            });
+        }, { threshold: 0.1 });
+    
+        document.querySelectorAll('.feature-item').forEach(item => {
+            observer.observe(item);
+        });
+    
+        // Theme toggle functionality
+        const themeToggle = document.querySelector('.theme-toggle');
+        const mobileThemeToggle = document.querySelector('.mobile-theme-toggle');
+    
+        themeToggle.addEventListener('click', function () {
+            document.body.classList.toggle('white-mode');
+        });
+    
+        if (mobileThemeToggle) {
+            mobileThemeToggle.addEventListener('click', function () {
+                document.body.classList.toggle('white-mode');
+            });
+        }
+    
+        // Mobile menu functionality
+        const hamburger = document.querySelector('.hamburger');
+        const mobileMenu = document.querySelector('.mobile-menu');
+    
+        if (hamburger && mobileMenu) {
+            hamburger.addEventListener('click', function () {
+                this.classList.toggle('active');
+                mobileMenu.classList.toggle('active');
+            });
+        }
+    </script>
+</body>
+
+</html>
